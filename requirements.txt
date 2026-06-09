@@ -1,0 +1,15 @@
+torch==2.5.1
+transformers==4.55.0
+peft==0.17.0
+safetensors==0.5.3
+vllm==0.7.1+cu118
+datasets==4.0.0
+numpy==1.26.4
+pandas==2.3.1
+scipy==1.15.3
+scikit-learn==1.7.1
+nltk==3.9.1
+openai==1.98.0
+requests==2.32.4
+matplotlib==3.10.5
+loguru==0.7.3
