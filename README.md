@@ -92,11 +92,11 @@ python -m src.run_mergevole \
     --test_tasks   mmlu gsm8k \
     --task_weights 1.0 1.0 \
     --update_mode  es \
-    --ports        9113 9114 9115 9116 \
-    --iters        50 \
+    --ports        9113 \
+    --iters        10 \
     --num_selected_experts 10 \
     --combine_method ties \
-    --seed 42
+    --seed 1234
 ```
 
 Results, the best merged adapter, the run configuration, and per-step state are saved
@@ -119,7 +119,7 @@ under `mergevole_workspace/<tasks>/<...>/<run-id>/`.
 | `--early_stop` / `--early_stop_iter` | Enable patience-based early stopping. | off / `5` |
 
 **ES-specific:** `--alpha` (learning rate), `--sigma` (noise std), `--n_samples`
-(perturbations/step), `--tau` (utility temperature; try `0.1` for 7B models).
+(perturbations/step), `--tau` (utility temperature; try `1` for 2B models).
 
 **PSO-specific:** `--phi_inertia`, `--phi_cognitive`, `--phi_social`, `--phi_repel`,
 `--phi_lambda`, `--lambda_step`, `--unable_random`.
