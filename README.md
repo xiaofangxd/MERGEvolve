@@ -2,7 +2,6 @@
 
 <p align="center">
   <a href="#-overview">Overview</a> •
-  <a href="#-key-features">Features</a> •
   <a href="#-installation">Installation</a> •
   <a href="#-quick-start">Quick Start</a> •
   <a href="#-supported-benchmarks">Benchmarks</a> •
@@ -24,11 +23,9 @@
 
 ---
 
-## 🧩 Method at a Glance
+## 🧩 Overview
 
-```
-
-```
+![Overview](MERGEvole.png)
 
 ## ⚙️ Installation
 
