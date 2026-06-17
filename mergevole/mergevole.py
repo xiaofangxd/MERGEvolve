@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def _cmaes_utilities(lam: int) -> np.ndarray:
+    """CMA-ES style recombination weights, recentered to sum to zero (rank-based)."""
     assert lam >= 1
     cutoff = np.log(lam / 2.0 + 1.0)
     raw = np.array([max(0.0, cutoff - np.log(k)) for k in range(1, lam + 1)], dtype=np.float64)
@@ -27,6 +28,7 @@ def _cmaes_utilities(lam: int) -> np.ndarray:
     return u
 
 def _rank_based_utilities(performance: List[float], higher_is_better: bool = True) -> np.ndarray:
+    """Map raw performances to rank-based utilities (invariant to score scale)."""
     lam = len(performance)
     u_rank = _cmaes_utilities(lam)
     idx = np.argsort(performance)
@@ -44,6 +46,11 @@ def _signed_merge_by_utilities(
     center: str = "none",           
     step_scale: float = 1,        
 ) -> tuple[Dict[str, torch.Tensor], dict]:
+    """Fuse a set of LoRA state dicts into a single initial point theta0.
+
+    Each expert is weighted by its utility and (optionally) centered around the
+    population mean, yielding theta0 = mu + step_scale * sum_i(u_i * lora_i).
+    """
     lam = len(lora_state_dicts)
     assert lam == len(utilities)
 
@@ -102,6 +109,7 @@ def _zscore_softmax_utilities(
     higher_is_better: bool = True,
     eps: float = 1e-8
 ) -> np.ndarray:
+    """Convert performances into normalized weights via z-score + temperature softmax."""
     s = np.asarray(performance, dtype=np.float64)
     if not higher_is_better:
         s = -s
@@ -117,6 +125,14 @@ def _zscore_softmax_utilities(
 
 
 class MERGEVOLE(BaseMethod):
+    """Swarm/evolutionary optimizer that searches the LoRA weight space.
+
+    Starting from a utility-weighted fusion of candidate expert LoRAs, MERGEVOLE
+    iteratively refines a single merged adapter (theta) using either a Particle
+    Swarm Optimization (``pso``) or an Evolution Strategy (``es``) update rule,
+    with fitness measured by downstream task accuracy served through vLLM.
+    """
+
     def __init__(self, config: PSOConfig) -> None:
         super().__init__(config)
         self.config = config
@@ -232,6 +248,7 @@ class MERGEVOLE(BaseMethod):
         )
 
     def initialize(self) -> None:
+        """Sample candidate experts, score them, and fuse into the initial theta."""
         logger.info("Initializing individuals ...")
         start_time = time.time()
         self.individuals = []
@@ -375,8 +392,11 @@ class MERGEVOLE(BaseMethod):
             p.save_particle(save_path=save_path)
             p.evaluated = {task: False for task in self.tasks}
 
-    #  Gasussian sampling
     def individual_generate(self, step: int, sigma: float) -> List[Dict[str, torch.Tensor]]:
+        """ES exploration: sample n Gaussian perturbations around theta.
+
+        Returns the noise vectors (epsilons) used later to estimate the gradient.
+        """
         n = getattr(self.config, "n_samples", 10)
         epsilons: List[Dict[str, torch.Tensor]] = []
         new_individuals: List[Particle] = []
@@ -407,14 +427,14 @@ class MERGEVOLE(BaseMethod):
         self.individuals = new_individuals
         return epsilons
 
-    # update theta 
     def update_theta(self, step: int, performance: List[float], epsilons: List[Dict[str, torch.Tensor]],
                      alpha: float, sigma: float):
+        """Apply the ES natural-gradient step: theta <- theta + (alpha / (sigma*n)) * sum_i(u_i * eps_i)."""
         if not hasattr(self, 'performance_parent'):
-            raise ValueError("请在调用 update_theta 前，将 self.performance_parent 设为父代 θ 的分数。")
+            raise ValueError("self.performance_parent (parent theta score) must be set before calling update_theta.")
 
         n = len(performance)
-        assert n == len(epsilons), "performance 与 epsilons 数量不一致"
+        assert n == len(epsilons), "performance and epsilons must have the same length"
 
         u = _rank_based_utilities(performance, higher_is_better=True) 
         logger.info(f"[STEP {step}] z-score utilities (sum≈0): {np.round(u, 4)}")
@@ -438,8 +458,8 @@ class MERGEVOLE(BaseMethod):
 
 
 
-    # single search
     def single_search(self, step: int) -> None:
+        """Run one optimization iteration."""
         start_time = time.time()
         logger.info(f"Start searching for {step} steps ...")
         logger.info("Update velocity & weight ...")
@@ -482,7 +502,7 @@ class MERGEVOLE(BaseMethod):
             performance.append(result['weighted_score'])
 
         if self.update_mode == "es":
-            assert epsilons is not None, "ES 模式下 epsilons 不应为 None"
+            assert epsilons is not None, "epsilons must not be None in ES mode"
             self.update_theta(
                 step=step,
                 performance=performance,
@@ -499,8 +519,8 @@ class MERGEVOLE(BaseMethod):
         self.save_optim_state(state=self.state)
         self.report_state(step=step)
 
-    # top level search
     def search(self):
+        """Full optimization loop: init, iterate with early stopping, then test the best adapter."""
         start_time = time.time()
         self.print_config()
         self.initialize()
@@ -565,9 +585,9 @@ class MERGEVOLE(BaseMethod):
         torch.save(post_swarm_results, os.path.join(self.workspace, "post_swarm_analysis.pt"))
 
 
-    # create particle from theta
     def _create_particle_from_theta(self) -> Particle:
-        assert self.theta is not None, "theta 未初始化"
+        """Materialize the current theta as a saved Particle for evaluation."""
+        assert self.theta is not None, "theta is not initialized"
         particle_id = uuid.uuid4().hex
         particle_path = os.path.join(self.workspace, f"theta_{particle_id}")
         p = Particle(

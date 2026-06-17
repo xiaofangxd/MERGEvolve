@@ -38,10 +38,10 @@ def save_lora_weight(lora_weight, lora_path: str, tokenizer: AutoTokenizer | str
     if isinstance(tokenizer, str):
         tokenizer = AutoTokenizer.from_pretrained(tokenizer)
     if isinstance(config, str):
-        # 修复：确保配置路径存在
+        # Make sure the config path exists
         config_path = Path(config)
         if not config_path.exists():
-            # 尝试在当前工作目录下查找
+            # Fall back to looking it up under the current working directory
             config_path = Path.cwd() / config
             if not config_path.exists():
                 raise FileNotFoundError(f"LORA config file not found: {config}")

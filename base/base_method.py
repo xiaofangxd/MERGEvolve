@@ -181,7 +181,7 @@ class BaseMethod(ABC):
         assert hasattr(self, "task_weights"), logger.error("Task weights are not set.")
         assert hasattr(self, "tasks"), logger.error("Tasks are not set.")
 
-        # 取所有任务共有 individual_id 的交集，避免 KeyError（部分任务评估失败导致缺失）
+        # Intersect individual ids shared across all tasks to avoid KeyError (some tasks may fail to evaluate)
         valid_individual_ids = set(task_scores[self.tasks[0]].keys())
         for task in self.tasks[1:]:
             valid_individual_ids &= set(task_scores[task].keys())
@@ -227,7 +227,7 @@ class BaseMethod(ABC):
         # 2. Compute the weighted score
         weighted_scores = self.compute_weighted_score(all_task_scores)
         
-        # 如果需要返回预测结果，手动把 predictions 塞回最终结果里
+        # Merge per-task predictions back into the final result when requested
         if return_predictions:
             for pid, result in weighted_scores.items():
                 result['predictions'] = {}
@@ -264,15 +264,15 @@ class BaseMethod(ABC):
             task_stats = {task: {"max": -float("inf"), "min": float("inf"), "sum": 0} for task in self.tasks}
             weighted_stats = {"max": -float("inf"), "min": float("inf"), "sum": 0}
 
-            # 收集统计信息
+            # Collect statistics
             for individual_data in weighted_scores.values():
-                # 更新加权分数统计
+                # Update weighted-score statistics
                 weighted_score = individual_data["weighted_score"]
                 weighted_stats["max"] = max(weighted_stats["max"], weighted_score)
                 weighted_stats["min"] = min(weighted_stats["min"], weighted_score)
                 weighted_stats["sum"] += weighted_score
                 
-                # 更新每个任务的统计
+                # Update per-task statistics
                 for task, score in individual_data["task_scores"].items():
                     task_stats[task]["max"] = max(task_stats[task]["max"], score)
                     task_stats[task]["min"] = min(task_stats[task]["min"], score)

@@ -79,7 +79,7 @@ class DROP(Evaluator):
                 index=index,
                 predicted_answer=predicted_answer,
                 reference_answer=reference_answer,
-                # DROP 的 EM 通常为 0/1；用 EM==1 作为二元正确性，供上层分析/可视化使用
+                # DROP EM is typically 0/1; use EM==1 as binary correctness for upstream analysis/visualization
                 is_correct=(em_score >= 1.0),
                 score = dict(
                     em_score=em_score,

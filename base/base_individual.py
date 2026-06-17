@@ -44,7 +44,7 @@ class BaseIndividual(ABC):
             if os.path.isfile(safetensors):
                 size = os.path.getsize(safetensors)
                 with open(safetensors, "rb") as f:
-                    head = f.read(1024 * 1024)  # 只读前 1MB
+                    head = f.read(1024 * 1024) 
                 md5_head = hashlib.md5(head).hexdigest()
                 logger.info(f"[DEBUG] Saved LoRA -> {safetensors} | size={size} bytes | md5(head,1MB)={md5_head}")
             else:

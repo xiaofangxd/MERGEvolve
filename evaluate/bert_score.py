@@ -49,7 +49,7 @@ class SimpleBERTScore:
                 if result:
                     return json.loads(result[0])
                 
-            # 如果缓存未命中，从API获取
+            # On cache miss, fetch the embedding from the API
             delay = initial_delay
             for attempt in range(max_retries):
                 try:
@@ -71,7 +71,7 @@ class SimpleBERTScore:
                 except Exception as e:
                     if attempt == max_retries - 1:  # Last attempt
                         logger.error(f"Final attempt failed. Error getting embeddings: {e}")
-                        return None  # 改为返回None而不是抛出异常
+                        return None  # return None instead of raising an exception
                     logger.warning(f"Attempt {attempt + 1}/{max_retries} failed. Retrying in {delay:.1f}s... Error: {e}")
                     time.sleep(delay)
                     delay *= 2  # Exponential backoff
@@ -85,7 +85,7 @@ class SimpleBERTScore:
             embedding = self.get_single_embedding(text, max_retries, initial_delay)
             if embedding is None:
                 logger.error(f"Failed to get embedding for text: {text}")
-                return []  # 保持与原函数一致的错误处理行为
+                return []  # keep the same error-handling behavior as the original function
             embeddings.append(embedding)
         return embeddings
 
@@ -100,36 +100,36 @@ class SimpleBERTScore:
         if len(cand_embeddings.shape) == 1:
             cand_embeddings = cand_embeddings.reshape(1, -1)
         
-        # 计算范数（L2范数）
+        # Compute L2 norms
         ref_norm = np.linalg.norm(ref_embeddings, axis=1, keepdims=True)
         cand_norm = np.linalg.norm(cand_embeddings, axis=1, keepdims=True)
     
-        # 归一化向量
+        # Normalize vectors
         ref_embeddings_normalized = ref_embeddings / ref_norm
         cand_embeddings_normalized = cand_embeddings / cand_norm
         
-        # 计算余弦相似度
+        # Compute cosine similarity
         cosine_sim = np.dot(ref_embeddings_normalized, cand_embeddings_normalized.T)
         
-        # 确保所有值都在[-1, 1]范围内（处理数值误差）
+        # Clip values to [-1, 1] to handle numerical error
         cosine_sim = np.clip(cosine_sim, -1.0, 1.0)
         return cosine_sim
 
     def compute_bertscore(self, references: List[str], candidates: List[str]):
-        # 获取embeddings
+        # Get embeddings
         ref_embeddings = self.get_bert_embeddings(references)
         cand_embeddings = self.get_bert_embeddings(candidates)
 
-        # 计算相似度矩阵
+        # Compute the similarity matrix
         pairwise_scores = self.compute_pairwise_cosine_scores(ref_embeddings, cand_embeddings)
 
-        # 计算precision (candidate -> reference)
+        # Compute precision (candidate -> reference)
         precision = np.mean(np.max(pairwise_scores, axis=1))
         
-        # 计算recall (reference -> candidate)
+        # Compute recall (reference -> candidate)
         recall = np.mean(np.max(pairwise_scores, axis=0))
         
-        # 计算F1
+        # Compute F1
         if precision + recall == 0:
             f1 = 0
         else:
@@ -211,10 +211,10 @@ def get_best_sentence(sentence_list: List[str]) -> tuple[str, float]:
     }
 
 def main():
-    # 示例文本
+    # Example texts
     sentences = ["i want to control my weight.", "this is a test", "The cat sits on the mat.", "The weather is nice today."]
     
-    # 获取最佳句子
+    # Get the best sentence
     result = get_best_sentence(sentences)
     print(f"scores: {result['scores']}")
     print(f"sentence_pairs: {result['sentence_pairs']}")
