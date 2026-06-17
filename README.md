@@ -1,4 +1,4 @@
-# MERGEvolve: Training-Free LoRA Expert Merging via Swarm & Evolutionary Search
+# Model Merging to Evolution: Parameter Space Exploration for Expert Models
 
 <p align="center">
   <a href="#-overview">Overview</a> •
@@ -24,65 +24,10 @@
 
 ---
 
-## 🔭 Overview
-
-Parameter-efficient fine-tuning produces a large and growing zoo of **LoRA experts**,
-each specialized for a different skill or domain. Combining them into a single, stronger
-adapter is appealing, but the optimal combination is highly non-linear and expensive to
-find by hand or by gradient descent.
-
-**MERGEvolve** reformulates expert merging as a **black-box optimization over the LoRA
-weight space**. It maintains a single merged adapter `θ` and refines it iteratively using
-population-based, derivative-free search driven only by task accuracy that is measured
-through fast [vLLM](https://github.com/vllm-project/vllm) inference.
-
-The search proceeds in three stages:
-
-1. **Utility-weighted initialization.** Candidate experts are scored on a validation set,
-   converted into utilities (z-score + temperature softmax), and fused into an initial
-   point `θ₀ = μ + step · Σᵢ uᵢ · LoRAᵢ`.
-2. **Population-based refinement.** At every iteration `θ` is improved with one of two
-   interchangeable update rules:
-   - **ES** (Evolution Strategy): sample Gaussian perturbations around `θ`, evaluate them,
-     and take a rank-based natural-gradient step.
-   - **PSO** (Particle Swarm Optimization): move particles under inertia, cognitive,
-     social, and repulsion forces toward the best-known regions.
-3. **Selection & test.** The best adapter found on the validation tasks is re-evaluated on
-   the held-out test tasks. Pre-/post-search predictions are dumped for analysis.
-
-Because the entire loop is gradient-free and only requires forward passes, MERGEvolve
-scales to large models served behind an inference endpoint and is agnostic to the base
-model architecture.
-
-## ✨ Key Features
-
-- **Two interchangeable optimizers** — Evolution Strategy (`es`) and Particle Swarm
-  Optimization (`pso`) behind a single CLI flag (`--update_mode`).
-- **Gradient-free & training-free** — the search only consumes task accuracy from a
-  served model; no back-propagation through the LLM.
-- **vLLM-native evaluation** — adapters are hot-swapped at runtime via vLLM's
-  `load_lora_adapter` / `unload_lora_adapter`, with multi-port parallel scoring.
-- **Rank-based, scale-invariant updates** — CMA-ES-style utilities make the search robust
-  to the absolute scale of benchmark metrics.
-- **Score caching & early stopping** — expert scores are cached to disk and reused; an
-  optional patience-based early-stop saves compute.
-- **14+ ready-to-use benchmarks** spanning reasoning, knowledge, code, math, multilingual,
-  and emotion recognition (see below).
-- **Reproducible artifacts** — every run writes its config, per-step state, and the
-  best adapter into a self-contained workspace.
-
 ## 🧩 Method at a Glance
 
 ```
-candidate LoRA experts ──► validation scoring ──► utility-weighted fusion  (θ₀)
-                                                          │
-                          ┌───────────────────────────────┴───────────────────────────────┐
-                          │                       iterate for max_iter                       │
-                          │   ES:  θ ← θ + α/(σ·n) · Σ uᵢ·εᵢ     (sample → score → step)      │
-                          │   PSO: vₖ ← inertia+cognitive+social−repel ;  xₖ ← xₖ + λ·vₖ      │
-                          └───────────────────────────────┬───────────────────────────────┘
-                                                          ▼
-                                       best θ ──► held-out test evaluation
+
 ```
 
 ## ⚙️ Installation
