@@ -2,7 +2,7 @@ torch==2.5.1
 transformers==4.55.0
 peft==0.17.0
 safetensors==0.5.3
-vllm==0.7.1+cu118
+vllm==0.7.1
 datasets==4.0.0
 numpy==1.26.4
 pandas==2.3.1

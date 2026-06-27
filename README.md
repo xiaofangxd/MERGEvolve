@@ -74,10 +74,7 @@ Start one or more vLLM OpenAI-compatible servers (one per GPU). They expose the 
 that the optimizer queries during evaluation.
 
 ```bash
-python -m src.deploy_vllm \
-    --model_name_or_path /path/to/base_model \
-    --max_workers 4 \
-    --gpu_ids 0 1 2 3
+bash src\deploy_multi_gpu.sh # You can set the paramaters in this file.
 ```
 
 The script prints the ports it bound to; pass these to the search via `--ports`.
@@ -143,7 +140,7 @@ New benchmarks can be added by implementing an `Evaluator` subclass (see
 ```
 src/
 ├── run_mergevole.py          # CLI entry point for the search
-├── deploy_vllm.py            # spins up vLLM servers + runtime LoRA (un)loading
+├── deploy_multi_gpu.sh       # spins up vLLM servers + runtime LoRA (un)loading
 ├── utils.py                  # LoRA I/O, prompt templates, URL helpers
 ├── requirements.txt
 ├── base/                     # framework abstractions
@@ -165,7 +162,7 @@ If you find this work useful, please cite:
 
 ```bibtex
 @inproceedings{mergevolve,
-  title     = {MERGEvolve: Training-Free LoRA Expert Merging via Swarm and Evolutionary Search},
+  title     = {Model Merging to Evolution: Parameter Space Exploration for Expert Models},
   author    = {Anonymous},
   booktitle = {Under Review},
   year      = {2026}
@@ -178,6 +175,8 @@ Released under the MIT License. See `LICENSE` for details.
 
 ## 🙏 Acknowledgements
 
-This project builds on [vLLM](https://github.com/vllm-project/vllm),
-[PEFT](https://github.com/huggingface/peft), and the Hugging Face ecosystem, and draws
-inspiration from prior work on model merging and population-based optimization.
+This project builds on [vLLM](https://github.com/vllm-project/vllm),[PEFT](https://github.com/huggingface/peft), and the Hugging Face ecosystem.
+
+Portions of the evaluation pipeline, vLLM deployment utilities, and related infrastructure are adapted from the official implementation of **Nature-Inspired Population-Based Evolution of Large Language Models**([GENOME](https://github.com/ZhangYiqun018/GENOME); Zhang et al., ACL 2026).
+
+We thank the authors for open-sourcing their code.MERGEvolve extends this line of work with a gradient-free search over merged LoRA experts (ES/PSO), rather than reproducing the full GENOME evolutionary framework.
