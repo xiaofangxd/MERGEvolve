@@ -161,11 +161,15 @@ src/
 If you find this work useful, please cite:
 
 ```bibtex
-@inproceedings{mergevolve,
-  title     = {Model Merging to Evolution: Parameter Space Exploration for Expert Models},
-  author    = {Anonymous},
-  booktitle = {Under Review},
-  year      = {2026}
+
+@misc{wang2026modelmergingevolutionparameter,
+      title={Model Merging to Evolution: Parameter Space Exploration for Expert Models}, 
+      author={Chao Wang and Yuchen Guo and Zheng Tan and Guanchun Wang and Yanbiao Ma and Qiqi Duan and Peng Wu},
+      year={2026},
+      eprint={2606.28373},
+      archivePrefix={arXiv},
+      primaryClass={cs.NE},
+      url={https://arxiv.org/abs/2606.28373}, 
 }
 ```
 
